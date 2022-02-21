@@ -1,80 +1,80 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
-pub enum JsonPatch<T> {
+pub enum JsonTernary<T> {
     Value(T), // Set the aggregate value to the value of T
     Null,     // Set the aggregate value to null
     Absent    // Do not change the aggregate value
 }
 
-impl<T> JsonPatch<T> {
+impl<T> JsonTernary<T> {
     pub const fn is_value(&self) -> bool {
-        matches!(*self, JsonPatch::Value(_))
+        matches!(*self, JsonTernary::Value(_))
     }
     pub const fn is_null(&self) -> bool {
-        matches!(*self, JsonPatch::Null)
+        matches!(*self, JsonTernary::Null)
     }
     pub const fn is_absent(&self) -> bool {
-        matches!(*self, JsonPatch::Absent)
+        matches!(*self, JsonTernary::Absent)
     }
 }
 
 // https://stackoverflow.com/a/44332837
-impl<T> Default for JsonPatch<T> {
+impl<T> Default for JsonTernary<T> {
     fn default() -> Self {
-        JsonPatch::Absent
+        JsonTernary::Absent
     }
 }
 
-impl<T> From<Option<T>> for JsonPatch<T> {
-    fn from(opt: Option<T>) -> JsonPatch<T> {
+impl<T> From<Option<T>> for JsonTernary<T> {
+    fn from(opt: Option<T>) -> JsonTernary<T> {
         match opt {
-            Some(v) => JsonPatch::Value(v),
-            None => JsonPatch::Null,
+            Some(v) => JsonTernary::Value(v),
+            None => JsonTernary::Null,
         }
     }
 }
 
-impl<'de, T> Deserialize<'de> for JsonPatch<T> where T: Deserialize<'de> {
+impl<'de, T> Deserialize<'de> for JsonTernary<T> where T: Deserialize<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         Option::deserialize(deserializer).map(Into::into)
     }
 }
 
 // See https://serde.rs/impl-serialize.html
-impl<T> Serialize for JsonPatch<T> where T: Serialize {
+impl<T> Serialize for JsonTernary<T> where T: Serialize {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         match self {
-            JsonPatch::Value(t) => serializer.serialize_some(t),
-            JsonPatch::Null => serializer.serialize_none(),
-            JsonPatch::Absent => serializer.serialize_none(),
+            JsonTernary::Value(t) => serializer.serialize_some(t),
+            JsonTernary::Null => serializer.serialize_none(),
+            JsonTernary::Absent => serializer.serialize_none(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::json_patch::JsonPatch;
+    use crate::json_ternary::JsonTernary;
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct Record {
         #[serde(default)]
-        #[serde(skip_serializing_if = "JsonPatch::is_absent")]
-        a: JsonPatch<String>,
+        #[serde(skip_serializing_if = "JsonTernary::is_absent")]
+        a: JsonTernary<String>,
 
         #[serde(default)]
-        #[serde(skip_serializing_if = "JsonPatch::is_absent")]
-        b: JsonPatch<u32>,
+        #[serde(skip_serializing_if = "JsonTernary::is_absent")]
+        b: JsonTernary<u32>,
 
         #[serde(default)]
-        #[serde(skip_serializing_if = "JsonPatch::is_absent")]
-        c: JsonPatch<Vec<i32>>
+        #[serde(skip_serializing_if = "JsonTernary::is_absent")]
+        c: JsonTernary<Vec<i32>>
     }
 
     #[test]
-    pub fn test_patch_value() {
-        let t = JsonPatch::Value(String::from("123"));
+    pub fn test_ternary_value() {
+        let t = JsonTernary::Value(String::from("123"));
         assert!(t.is_value());
         assert!(!t.is_null());
         assert!(!t.is_absent());
@@ -85,8 +85,8 @@ mod tests {
     }
 
     #[test]
-    pub fn test_patch_null() {
-        let t: JsonPatch<u32> = JsonPatch::Null;
+    pub fn test_ternary_null() {
+        let t: JsonTernary<u32> = JsonTernary::Null;
         assert!(!t.is_value());
         assert!(t.is_null());
         assert!(!t.is_absent());
@@ -97,8 +97,8 @@ mod tests {
     }
 
     #[test]
-    pub fn test_patch_absent() {
-        let t: JsonPatch<u32> = JsonPatch::Absent;
+    pub fn test_ternary_absent() {
+        let t: JsonTernary<u32> = JsonTernary::Absent;
         assert!(!t.is_value());
         assert!(!t.is_null());
         assert!(t.is_absent());
@@ -111,9 +111,9 @@ mod tests {
     #[test]
     pub fn test_serde_record_value() {
         let record_ref = Record{
-            a: JsonPatch::Value(String::from("Foo")),
-            b: JsonPatch::Value(123),
-            c: JsonPatch::Value(vec![3,-5, 7])
+            a: JsonTernary::Value(String::from("Foo")),
+            b: JsonTernary::Value(123),
+            c: JsonTernary::Value(vec![3, -5, 7])
         };
         let json_ref = r#"{"a":"Foo","b":123,"c":[3,-5,7]}"#;
         serde_and_verify(&record_ref, json_ref);
@@ -122,9 +122,9 @@ mod tests {
     #[test]
     pub fn test_serialize_record_null() {
         let record_ref = Record{
-            a: JsonPatch::Null,
-            b: JsonPatch::Null,
-            c: JsonPatch::Null
+            a: JsonTernary::Null,
+            b: JsonTernary::Null,
+            c: JsonTernary::Null
         };
         let json_ref = r#"{"a":null,"b":null,"c":null}"#;
         serde_and_verify(&record_ref, json_ref);
@@ -133,9 +133,9 @@ mod tests {
     #[test]
     pub fn test_serialize_record_absent() {
         let record_ref = Record{
-            a: JsonPatch::Absent,
-            b: JsonPatch::Absent,
-            c: JsonPatch::Absent
+            a: JsonTernary::Absent,
+            b: JsonTernary::Absent,
+            c: JsonTernary::Absent
         };
         let json_ref = r#"{}"#;
         serde_and_verify(&record_ref, json_ref);
