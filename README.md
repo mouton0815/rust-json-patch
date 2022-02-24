@@ -23,7 +23,7 @@ Ternary properties can be used to implement update logic in CRUD databases:
 2. `JsonTernary::Null` deletes the target value.
 2. `JsonTernary::Missing` leaves the target value unchanged.
 
-See [json-ternary-demo](./src/bin/json-ternary-demo) for a toy example.
+See [json-ternary-demo](./src/bin/json-ternary-demo.rs) for a toy example.
 
 Source: https://stackoverflow.com/a/44332837 (credits to [E_net4 the curator](https://stackoverflow.com/users/1233251/e-net4-the-curator) and [Shepmaster](https://stackoverflow.com/users/155423/shepmaster)).
 
