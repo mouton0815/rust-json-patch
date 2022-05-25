@@ -1,6 +1,6 @@
 # About
 
-[JsonTernary](./src/json_ternary) is an `enum` to express the ternary logic of JSON properties. Let
+[JsonTernary](./src/json_ternary.rs) is an `enum` to express the ternary logic of JSON properties. Let
 ```rust
 struct Message {
     answer: JsonTernary<u32>
